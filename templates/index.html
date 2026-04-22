@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Innova QR Code Portal</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f4f5f7; color: #2d3748; min-height: 100vh; }
+    .header { background: #1a1a1a; padding: 0 32px; height: 60px; display: flex; align-items: center; gap: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+    .header-logo { background: #c0392b; color: white; font-weight: 700; font-size: 13px; padding: 5px 10px; border-radius: 4px; letter-spacing: 0.5px; }
+    .header-title { color: #e2e8f0; font-size: 15px; font-weight: 500; }
+    .container { max-width: 640px; margin: 48px auto; padding: 0 16px; }
+    .page-title { font-size: 24px; font-weight: 700; color: #1a1a1a; margin-bottom: 6px; }
+    .page-subtitle { font-size: 14px; color: #718096; margin-bottom: 32px; }
+    .card { background: white; border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.04); padding: 32px; }
+    .form-group { margin-bottom: 22px; }
+    label { display: block; font-size: 13px; font-weight: 600; color: #4a5568; margin-bottom: 7px; text-transform: uppercase; letter-spacing: 0.4px; }
+    label .required { color: #c0392b; margin-left: 3px; }
+    input[type="text"], input[type="url"], select { width: 100%; padding: 10px 14px; border: 1.5px solid #e2e8f0; border-radius: 7px; font-size: 14px; color: #2d3748; transition: border-color 0.15s, box-shadow 0.15s; background: white; appearance: none; -webkit-appearance: none; }
+    input[type="text"]:focus, input[type="url"]:focus, select:focus { outline: none; border-color: #c0392b; box-shadow: 0 0 0 3px rgba(192,57,43,0.12); }
+    .select-wrapper { position: relative; }
+    .select-wrapper::after { content: "\25BE"; position: absolute; right: 14px; top: 50%; transform: translateY(-50%); pointer-events: none; color: #718096; font-size: 13px; }
+    .hint { font-size: 12px; color: #a0aec0; margin-top: 5px; }
+    .btn-primary { width: 100%; padding: 13px; background: #c0392b; color: white; border: none; border-radius: 7px; font-size: 15px; font-weight: 600; cursor: pointer; transition: background 0.15s, transform 0.1s; margin-top: 8px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .btn-primary:hover:not(:disabled) { background: #a93226; }
+    .btn-primary:active:not(:disabled) { transform: scale(0.99); }
+    .btn-primary:disabled { background: #e2e8f0; color: #a0aec0; cursor: not-allowed; }
+    .btn-download { display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; background: #1a1a1a; color: white; border: none; border-radius: 7px; font-size: 14px; font-weight: 600; cursor: pointer; text-decoration: none; transition: background 0.15s; margin-top: 16px; }
+    .btn-download:hover { background: #333; }
+    .spinner { width: 18px; height: 18px; border: 2.5px solid rgba(255,255,255,0.4); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .result-card { display: none; background: white; border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.04); padding: 32px; margin-top: 24px; text-align: center; }
+    .result-card.visible { display: block; }
+    .result-badge { display: inline-flex; align-items: center; gap: 6px; background: #f0fff4; color: #276749; font-size: 13px; font-weight: 600; padding: 6px 14px; border-radius: 20px; margin-bottom: 20px; }
+    .result-badge .dot { width: 7px; height: 7px; background: #38a169; border-radius: 50%; }
+    .qr-image-wrapper { display: inline-block; padding: 16px; background: white; border: 1.5px solid #e2e8f0; border-radius: 10px; margin-bottom: 4px; }
+    .qr-image-wrapper img { display: block; width: 200px; height: 200px; }
+    .result-meta { margin-top: 16px; text-align: left; background: #f7fafc; border-radius: 8px; padding: 14px 16px; }
+    .result-meta-row { display: flex; font-size: 13px; padding: 4px 0; }
+    .result-meta-label { color: #718096; font-weight: 600; width: 120px; flex-shrink: 0; }
+    .result-meta-value { color: #2d3748; word-break: break-all; }
+    .error-box { display: none; background: #fff5f5; border: 1.5px solid #fed7d7; border-radius: 7px; padding: 12px 16px; color: #c53030; font-size: 13px; margin-top: 16px; }
+    .error-box.visible { display: block; }
+    .divider { height: 1px; background: #f0f0f0; margin: 24px 0; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media (max-width: 520px) { .form-row { grid-template-columns: 1fr; } .container { margin: 24px auto; } .card { padding: 20px; } }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="header-logo">INNOVA</div>
+    <div class="header-title">QR Code Request Portal</div>
+  </div>
+
+  <div class="container">
+    <h1 class="page-title">Create a QR Code</h1>
+    <p class="page-subtitle">Fill out the form below. Your QR code will be generated instantly.</p>
+
+    <div class="card">
+      <form id="qrForm" novalidate>
+
+        <div class="form-group">
+          <label for="title">QR Code Name <span class="required">*</span></label>
+          <input type="text" id="title" placeholder="e.g. Retail POP - AutoZone Q3" required />
+          <div class="hint">Used to identify this QR code in the system.</div>
+        </div>
+
+        <div class="form-group">
+          <label for="target_url">Destination URL <span class="required">*</span></label>
+          <input type="url" id="target_url" placeholder="https://www.example.com" required />
+          <div class="hint">The website or page this QR code will link to.</div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="folder_id">Folder</label>
+            <div class="select-wrapper">
+              <select id="folder_id">
+                <option value="">&#8212; Loading folders&#8230; &#8212;</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="medium">Placement</label>
+            <div class="select-wrapper">
+              <select id="medium">
+                <option value="">&#8212; Select placement &#8212;</option>
+                <option value="NEWSPAPER">Magazine / Newspaper</option>
+                <option value="PRODUCT">Product Packaging</option>
+                <option value="FLYER">Flyer</option>
+                <option value="POSTER">Poster</option>
+                <option value="BUSINESS_CARD">Business Card</option>
+                <option value="PRODUCT_FOLDER">Brochure</option>
+                <option value="SHOPPING_WINDOW">Shopping Window</option>
+                <option value="WEBSITE">Website on PC</option>
+                <option value="TV">TV</option>
+                <option value="OTHER">Other</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <button type="submit" class="btn-primary" id="submitBtn">
+          <span id="btnText">Generate QR Code</span>
+          <span id="btnSpinner" style="display:none;"><div class="spinner"></div></span>
+        </button>
+
+      </form>
+
+      <div class="error-box" id="errorBox"></div>
+    </div>
+
+    <div class="result-card" id="resultCard">
+      <div class="result-badge"><span class="dot"></span> QR Code Created</div>
+      <div class="qr-image-wrapper">
+        <img id="qrImage" src="" alt="QR Code" />
+      </div>
+      <a id="downloadBtn" href="#" download="qr-code.png" class="btn-download">
+        &#11015; Download QR Code
+      </a>
+      <div class="result-meta" id="resultMeta"></div>
+    </div>
+  </div>
+
+  <script>
+    const API = window.location.origin;
+
+    async function loadFolders() {
+      const select = document.getElementById('folder_id');
+      try {
+        const resp = await fetch(API + '/api/folders');
+        const data = await resp.json();
+        const folders = Array.isArray(data) ? data : (data.data || []);
+        select.innerHTML = '<option value="">&#8212; Home (default) &#8212;</option>';
+        folders.forEach(function(f) {
+          const opt = document.createElement('option');
+          opt.value = f.id || f.folder_id || '';
+          opt.textContent = f.name || f.title || f.id;
+          select.appendChild(opt);
+        });
+      } catch (e) {
+        select.innerHTML = '<option value="">&#8212; Could not load folders &#8212;</option>';
+      }
+    }
+
+    loadFolders();
+
+    document.getElementById('qrForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const title = document.getElementById('title').value.trim();
+      const target_url = document.getElementById('target_url').value.trim();
+      const folder_id = document.getElementById('folder_id').value;
+      const medium = document.getElementById('medium').value;
+      const errorBox = document.getElementById('errorBox');
+      const resultCard = document.getElementById('resultCard');
+
+      errorBox.classList.remove('visible');
+      resultCard.classList.remove('visible');
+
+      if (!title) { showError('Please enter a QR code name.'); return; }
+      if (!target_url) { showError('Please enter a destination URL.'); return; }
+      if (!/^https?:\/\/.+/.test(target_url)) {
+        showError('Please enter a valid URL starting with https:// or http://');
+        return;
+      }
+
+      setLoading(true);
+
+      try {
+        const resp = await fetch(API + '/api/create-qr', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title: title, target_url: target_url, folder_id: folder_id || null, medium: medium || null })
+        });
+
+        const data = await resp.json();
+
+        if (!resp.ok || data.error) {
+          showError(data.message || data.error || 'Something went wrong. Please try again.');
+          return;
+        }
+
+        const code = data.code || data.id || data.slug;
+        if (!code) {
+          showError('QR code was created but could not retrieve image. Check your QR Code Manager.');
+          return;
+        }
+
+        const imageUrl = API + '/api/download-qr/' + code;
+        const img = document.getElementById('qrImage');
+        img.src = imageUrl;
+
+        const dlBtn = document.getElementById('downloadBtn');
+        dlBtn.href = imageUrl;
+        dlBtn.download = title.replace(/\s+/g, '-').toLowerCase() + '.png';
+
+        const shortUrl = data.short_url || data.url || 'qr.repairsolutions.com/' + code;
+        document.getElementById('resultMeta').innerHTML =
+          '<div class="result-meta-row"><span class="result-meta-label">Name</span><span class="result-meta-value">' + escapeHtml(title) + '</span></div>' +
+          '<div class="result-meta-row"><span class="result-meta-label">Destination</span><span class="result-meta-value">' + escapeHtml(target_url) + '</span></div>' +
+          '<div class="result-meta-row"><span class="result-meta-label">Short URL</span><span class="result-meta-value">' + escapeHtml(shortUrl) + '</span></div>';
+
+        resultCard.classList.add('visible');
+        resultCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+      } catch (err) {
+        showError('Network error. Please check your connection and try again.');
+      } finally {
+        setLoading(false);
+      }
+    });
+
+    function setLoading(on) {
+      const btn = document.getElementById('submitBtn');
+      document.getElementById('btnText').style.display = on ? 'none' : 'inline';
+      document.getElementById('btnSpinner').style.display = on ? 'inline' : 'none';
+      btn.disabled = on;
+    }
+
+    function showError(msg) {
+      const box = document.getElementById('errorBox');
+      box.textContent = msg;
+      box.classList.add('visible');
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+  </script>
+
+</body>
+</html>
